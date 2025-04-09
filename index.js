@@ -136,7 +136,7 @@ app.post('/api/increase-alice', (req, res) => {
 					execSync(`git remote set-url origin ${repoUrl}`)
 
 					execSync('git add .') // Добавляем файл БД в индекс
-					execSync('git commit -m "Обновление рейтинга Alice"') // Коммитим изменения
+					execSync(`git commit -m "Обновление рейтинга Alice ${newRating}"`) // Коммитим изменения
 					execSync('git push origin master') // Пушим изменения в GitHub
 					console.log('База данных и изменения успешно запушены в GitHub')
 
@@ -155,6 +155,17 @@ app.post('/api/increase-alice', (req, res) => {
 			}
 		)
 	})
+})
+
+app.get('/api/backup-db', (req, res) => {
+  const dbPath = path.resolve(__dirname, 'data', 'data.db')
+
+  res.download(dbPath, 'backup.db', err => {
+    if (err) {
+      console.error('Ошибка при скачивании БД:', err.message)
+      res.status(500).json({ error: 'Не удалось скачать базу данных' })
+    }
+  })
 })
 
 // Запуск сервера
