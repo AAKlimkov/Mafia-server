@@ -4,6 +4,7 @@ const bodyParser = require('body-parser')
 const sqlite3 = require('sqlite3').verbose()
 const path = require('path')
 const fs = require('fs')
+const { execSync } = require('child_process')
 
 const app = express()
 const PORT = 3001
@@ -52,7 +53,7 @@ const db = new sqlite3.Database(dbPath, err => {
 							['Alice', 1250],
 							['Bob', 1180],
 							['Charlie', 1300],
-							['Diana', 12220],
+							['Diana', 1220],
 							['Eve', 1280],
 							['Frank', 1100],
 							['Grace', 1275],
@@ -84,6 +85,59 @@ app.get('/api/players', (req, res) => {
 		} else {
 			res.json(rows)
 		}
+	})
+})
+
+// API: увеличить рейтинг Alice на 1
+app.post('/api/increase-alice', (req, res) => {
+	db.get("SELECT rating FROM players WHERE name = 'Alice'", (err, row) => {
+		if (err) {
+			console.error('Ошибка при получении Alice:', err.message)
+			return res.status(500).json({ error: err.message })
+		}
+
+		if (!row) {
+			return res.status(404).json({ error: 'Игрок Alice не найден' })
+		}
+
+		const newRating = row.rating + 1
+
+		// Обновляем рейтинг Alice в базе данных
+		db.run(
+			"UPDATE players SET rating = ? WHERE name = 'Alice'",
+			[newRating],
+			function (err) {
+				if (err) {
+					console.error('Ошибка при обновлении рейтинга:', err.message)
+					return res.status(500).json({ error: err.message })
+				}
+
+				// После обновления базы данных, выполняем git commit и push
+				try {
+					// Добавляем изменения в git
+
+					execSync('git config --global user.name "Andrei Klimkou"')
+					execSync('git config --global user.email "aaklimkov@gmail.com"')
+
+					execSync('git add .g') // Добавляем файл БД в индекс
+					execSync('git commit -m "Обновление рейтинга Alice"') // Коммитим изменения
+					execSync('git push') // Пушим изменения в GitHub
+					console.log('База данных и изменения успешно запушены в GitHub')
+
+					// Отправляем успешный ответ
+					res.json({
+						message: 'Рейтинг обновлён и изменения запушены в GitHub',
+						newRating,
+					})
+				} catch (gitErr) {
+					console.error('Ошибка при push в GitHub:', gitErr.message)
+					res.status(500).json({
+						error: 'Ошибка при push в GitHub',
+						message: gitErr.message,
+					})
+				}
+			}
+		)
 	})
 })
 
