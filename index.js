@@ -118,10 +118,26 @@ app.post('/api/increase-alice', (req, res) => {
 
 					execSync('git config --global user.name "Andrei Klimkou"')
 					execSync('git config --global user.email "aaklimkov@gmail.com"')
+					let remoteCheck
+					try {
+						remoteCheck = execSync('git remote -v').toString()
+					} catch (error) {
+						remoteCheck = ''
+					}
 
-					execSync('git add .g') // Добавляем файл БД в индекс
+					if (!remoteCheck.includes('origin')) {
+						execSync(
+							'git remote add origin https://github.com/AAKlimkov/Mafia-server.git'
+						)
+					}
+					const GITHUB_TOKEN = process.env.GITHUB_TOKEN
+
+					const repoUrl = `https://${GITHUB_TOKEN}@github.com/AAKlimkov/Mafia-server.git`
+					execSync(`git remote set-url origin ${repoUrl}`)
+
+					execSync('git add .') // Добавляем файл БД в индекс
 					execSync('git commit -m "Обновление рейтинга Alice"') // Коммитим изменения
-					execSync('git push') // Пушим изменения в GitHub
+					execSync('git push origin master') // Пушим изменения в GitHub
 					console.log('База данных и изменения успешно запушены в GitHub')
 
 					// Отправляем успешный ответ
